@@ -5,15 +5,17 @@ import polar
 from sklearn.neighbors import NearestNeighbors
 from itertools import combinations
 
-def cal_boundary(points, k=30, save_filename=None) :
+from tqdm import tqdm 
+
+def cal_boundary(points, k=30, save_filename=None, visualize=False) :
     neighbors = NearestNeighbors(n_neighbors=k).fit(points)
     distances, indices = neighbors.kneighbors(points)
 
     max_b = 0
     min_b = 1000000000
-
+    
     boundary = []
-    for i in range(points.shape[0]) :
+    for i in tqdm(range(points.shape[0]), "cal_boundary") :
         is_boundary = False
         p_neighbor, p_distance = indices[i], np.round(distances[i], 5)
         neighbor_points = points[p_neighbor[1:]]
@@ -28,7 +30,6 @@ def cal_boundary(points, k=30, save_filename=None) :
             min_b = local_resol
 
         pairs = list(combinations(p_neighbor[1:], 2))
-        print(i)
         for j in range(len(pairs)) :
             count = 0
             p1 = points[i]
@@ -62,13 +63,15 @@ def cal_boundary(points, k=30, save_filename=None) :
     print(f'len : {len(boundary)}')
     print(f'{min_b}')
     print(f'{max_b}')
+
     pc = o3d.geometry.PointCloud()
     pc.points = o3d.utility.Vector3dVector(np.pad(np.array(boundary), (0, 1), 'constant', constant_values=0))
-
-    o3d.visualization.draw_geometries([pc])
     points = np.array(pc.points)
+    
+    if visualize:
+        o3d.visualization.draw_geometries([pc])
+    
     if save_filename != None :
-
         np.savetxt(save_filename, points[:, :2])
 
     return points
